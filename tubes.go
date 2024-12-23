@@ -67,7 +67,7 @@ func login(U *tabUser) *User {
 	return nil
 }
 
-func adminMenu(database *tabObat, n int) {
+func adminMenu(database *tabObat) {
 	for {
 		fmt.Println("\nPilih operasi yang ingin dilakukan:")
 		fmt.Println("1. Tambahkan Obat")
@@ -89,9 +89,9 @@ func adminMenu(database *tabObat, n int) {
 		case "3":
 			editObat(database)
 		case "4":
-			hapusObat(database, n)
+			hapusObat(database)
 		case "5":
-			tampilkanObatharga(database, n)
+			tampilkanObatharga(database)
 		case "6":
 			fmt.Println("\nPilih urutan yang diinginkan:")
 			fmt.Println("1. Dari paling awal hingga paling akhir")
@@ -166,31 +166,36 @@ func tambahObat(A *tabObat) {
 		A.n++
 	}
 }
+func recursiveSearch(A tabObat, input string, index int) (Obat, bool) {
+	if index >= A.n {
+		return Obat{}, false
+	}
+
+	if strings.ToLower(A.DaftarObat[index].Nama) == strings.ToLower(input) || strings.ToLower(A.DaftarObat[index].Kode) == strings.ToLower(input) {
+		return A.DaftarObat[index], true
+	}
+
+	return recursiveSearch(A, input, index+1)
+}
 
 func cariObat(A tabObat) {
 	var input string
 	fmt.Print("Masukkan kode atau nama obat: ")
 	fmt.Scanln(&input)
-	ketemu := false
 
-	for i := 0; i < A.n; i++ {
-		if strings.ToLower(A.DaftarObat[i].Kode) == strings.ToLower(input) || strings.ToLower(A.DaftarObat[i].Nama) == strings.ToLower(input) {
-			ketemu = true
-			fmt.Println("Data Obat:")
-			fmt.Println("Nama:", A.DaftarObat[i].Nama)
-			fmt.Println("Kode:", A.DaftarObat[i].Kode)
-			fmt.Println("Harga:", A.DaftarObat[i].Harga)
-			fmt.Println("Jumlah Stok:", A.DaftarObat[i].JumlahStok)
-			fmt.Println("Tanggal Kadaluwarsa:", A.DaftarObat[i].TanggalKadaluwarsa)
-			fmt.Println("Kategori:", A.DaftarObat[i].Kategori)
-			fmt.Println("Pabrikan:", A.DaftarObat[i].Pabrikan)
-			return
-		}
-	}
+	obat, found := recursiveSearch(A, input, 0)
 
-	if !ketemu {
+	if found {
+		fmt.Println("Data Obat:")
+		fmt.Println("Nama:", obat.Nama)
+		fmt.Println("Kode:", obat.Kode)
+		fmt.Println("Harga:", obat.Harga)
+		fmt.Println("Jumlah Stok:", obat.JumlahStok)
+		fmt.Println("Tanggal Kadaluwarsa:", obat.TanggalKadaluwarsa)
+		fmt.Println("Kategori:", obat.Kategori)
+		fmt.Println("Pabrikan:", obat.Pabrikan)
+	} else {
 		fmt.Println("Obat dengan kode atau nama tersebut tidak ditemukan.")
-		return
 	}
 }
 
@@ -258,8 +263,8 @@ func editObat(A *tabObat) {
 	}
 }
 
-func hapusObat(A *tabObat, n int) {
-	sortingAscendingByHargaRecursive(A, n)
+func hapusObat(A *tabObat) {
+	sortingAscendingByHarga(A)
 	var input string
 	fmt.Print("Masukkan nama atau kode obat yang ingin dihapus: ")
 	fmt.Scanln(&input)
@@ -329,23 +334,23 @@ func pesanObat(A *tabObat) {
 		fmt.Println("Obat dengan nama atau kode tersebut tidak ditemukan.")
 	}
 }
-func tampilkanObatMahal(A tabObat, n int) {
-	sortingDescendingByHargaRecursive(&A, n)
+func tampilkanObatMahal(A tabObat) {
+	sortingDescendingByHarga(&A)
 	fmt.Println("\nDaftar Obat Berdasarkan Harga tertinggi ke terendah:")
 	for i := 0; i < A.n; i++ {
 		fmt.Printf("%d. Nama: %s, Harga: %d\n", i+1, A.DaftarObat[i].Nama, A.DaftarObat[i].Harga)
 	}
 }
 
-func tampilkanObatHargaMurah(A tabObat, n int) {
-	sortingAscendingByHargaRecursive(&A, n)
+func tampilkanObatHargaMurah(A tabObat) {
+	sortingAscendingByHarga(&A)
 	fmt.Println("Daftar Obat Berdasarkan Harga termurah ke termahal:")
 	for i := 0; i < A.n; i++ {
 		fmt.Printf("%d. Nama: %s, Harga: %d\n", i+1, A.DaftarObat[i].Nama, A.DaftarObat[i].Harga)
 	}
 }
 
-func tampilkanObatharga(A *tabObat, n int) {
+func tampilkanObatharga(A *tabObat) {
 	fmt.Println("\nPilih opsi pengurutan harga:")
 	fmt.Println("1. Tertinggi ke Terendah")
 	fmt.Println("2. Termurah ke Termahal")
@@ -355,9 +360,9 @@ func tampilkanObatharga(A *tabObat, n int) {
 
 	switch pilihan {
 	case "1":
-		tampilkanObatMahal(*A, n)
+		tampilkanObatMahal(*A)
 	case "2":
-		tampilkanObatHargaMurah(*A, n)
+		tampilkanObatHargaMurah(*A)
 	default:
 		fmt.Println("Pilihan tidak valid.")
 	}
@@ -381,49 +386,40 @@ func tampilkanObatKadaluarsaDescending(A *tabObat) {
 	}
 }
 
-func sortingAscendingByNamaRecurisve(A *tabObat, n int) {
-	if n <= 1 {
-		return
+func sortingAscendingByNama(A *tabObat) {
+	for i := 1; i < A.n; i++ {
+		key := A.DaftarObat[i]
+		j := i - 1
+		for j >= 0 && strings.ToLower(A.DaftarObat[j].Nama) < strings.ToLower(key.Nama) {
+			A.DaftarObat[j+1] = A.DaftarObat[j]
+			j = j - 1
+		}
+		A.DaftarObat[j+1] = key
 	}
-	sortingAscendingByNamaRecurisve(A, n-1)
-
-	key := A.DaftarObat[n-1]
-	j := n - 2
-
-	for j >= 0 && strings.ToLower(A.DaftarObat[j].Nama) > strings.ToLower(key.Nama) {
-		A.DaftarObat[j+1] = A.DaftarObat[j]
-		j--
-	}
-	A.DaftarObat[j+1] = key
 }
 
-func sortingAscendingByHargaRecursive(A *tabObat, n int) {
-	if n <= 1 {
-		return
+func sortingAscendingByHarga(A *tabObat) {
+	for i := 1; i < A.n; i++ {
+		key := A.DaftarObat[i]
+		j := i - 1
+		for j >= 0 && A.DaftarObat[j].Harga < key.Harga {
+			A.DaftarObat[j+1] = A.DaftarObat[j]
+			j = j - 1
+		}
+		A.DaftarObat[j+1] = key
 	}
-	sortingAscendingByHargaRecursive(A, n-1)
-
-	key := A.DaftarObat[n-1]
-	j := n - 2
-	for j >= 0 && A.DaftarObat[j].Harga > key.Harga {
-		A.DaftarObat[j+1] = A.DaftarObat[j]
-		j--
-	}
-	A.DaftarObat[j+1] = key
 }
 
-func sortingDescendingByHargaRecursive(A *tabObat, n int) {
-	if n <= 1 {
-		return
+func sortingDescendingByHarga(A *tabObat) {
+	for i := 1; i < A.n; i++ {
+		key := A.DaftarObat[i]
+		j := i - 1
+		for j >= 0 && A.DaftarObat[j].Harga > key.Harga {
+			A.DaftarObat[j+1] = A.DaftarObat[j]
+			j = j - 1
+		}
+		A.DaftarObat[j+1] = key
 	}
-	sortingDescendingByHargaRecursive(A, n-1)
-	key := A.DaftarObat[n-1]
-	j := n - 2
-	for j >= 0 && A.DaftarObat[j].Harga < key.Harga {
-		A.DaftarObat[j+1] = A.DaftarObat[j]
-		j--
-	}
-	A.DaftarObat[j+1] = key
 }
 
 func insertionSortByTanggalKadaluarsa(obatList []Obat) {
@@ -470,6 +466,7 @@ func cariBinary(obatList []Obat, input string) int {
 
 	for low <= high {
 		mid := (low + high) / 2
+
 		if strings.ToLower(obatList[mid].Nama) == input || strings.ToLower(obatList[mid].Kode) == input {
 			return mid
 		} else if strings.ToLower(obatList[mid].Nama) > input {
@@ -485,7 +482,6 @@ func cariBinary(obatList []Obat, input string) int {
 func main() {
 	var database tabObat
 	var users tabUser
-	var n int
 
 	initAdmin(&users)
 
@@ -503,7 +499,7 @@ func main() {
 			user := login(&users)
 			if user != nil {
 				if user.Role == "admin" {
-					adminMenu(&database, n)
+					adminMenu(&database)
 				} else {
 					buyerMenu(&database)
 				}
@@ -511,7 +507,7 @@ func main() {
 		case "2":
 			register(&users)
 		case "3":
-			fmt.Println("Terima kasih telah menggunakan sistem manajemen apotek!")
+			fmt.Println("Terima kasih telah menggunakan sistem manajemen apotek.")
 			return
 		default:
 			fmt.Println("Pilihan tidak valid. Silakan pilih lagi.")
